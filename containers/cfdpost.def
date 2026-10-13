@@ -1,0 +1,58 @@
+# Singularity / Apptainer definition: builds cfdpost from source, no Docker needed.
+#
+#   cd <repository root>
+#   singularity build --fakeroot cfdpost.sif containers/cfdpost.def     (or: apptainer build ...)
+#
+# Match the MPI of the cluster for the hybrid model (host mpirun/srun starting
+# container processes): Open MPI (default) or MPICH-ABI. To change it, edit the
+# MPI packages below (mpich libmpich-dev on Debian 12: From: debian:bookworm).
+
+Bootstrap: docker
+From: ubuntu:24.04
+
+%files
+    CMakeLists.txt /opt/cfdpost-src/
+    setup.py /opt/cfdpost-src/
+    pyproject.toml /opt/cfdpost-src/
+    README.md /opt/cfdpost-src/
+    cpp /opt/cfdpost-src/
+    python /opt/cfdpost-src/
+    tests /opt/cfdpost-src/
+    examples /opt/cfdpost-src/
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        g++ cmake make zlib1g-dev \
+        python3 python3-dev python3-pip python3-numpy python3-scipy python3-matplotlib python3-pytest \
+        python3-pybind11 python3-setuptools python3-wheel \
+        openmpi-bin libopenmpi-dev openssh-client
+    cd /opt/cfdpost-src
+    rm -rf build python/cfdpost/_core*.so
+    python3 -m pip install --break-system-packages --no-build-isolation --no-deps .
+    # keep only tests / examples (the sources would shadow the installed package)
+    rm -rf build /root/.cache cpp python setup.py CMakeLists.txt
+    apt-get purge -y g++ cmake make python3-dev && apt-get autoremove -y
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    export OMP_NUM_THREADS=${OMP_NUM_THREADS:-1}
+    export MPLBACKEND=Agg
+
+%runscript
+    exec python3 -m cfdpost "$@"
+
+%test
+    python3 -c "import cfdpost; print('cfdpost', cfdpost.__version__, cfdpost._core.mpi_library_version().splitlines()[0])"
+
+%labels
+    org.opencontainers.image.title cfdpost
+    org.opencontainers.image.description CFD post-processing for SU2 meshes and VTK solutions (C++/OpenMP/MPI + Python)
+
+%help
+    cfdpost: CFD post-processing for SU2 meshes and VTK solutions.
+      singularity run cfdpost.sif info flow.vtu                 # = python3 -m cfdpost ...
+      singularity exec cfdpost.sif python3 script.py
+      mpirun -n 8 singularity exec cfdpost.sif python3 script.py   (hybrid MPI)
+      singularity exec cfdpost.sif python3 -m pytest /opt/cfdpost-src/tests

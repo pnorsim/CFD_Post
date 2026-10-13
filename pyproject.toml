@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=64", "pybind11>=2.10"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cfdpost"
+version = "0.1.0"
+description = "CFD post-processing for SU2 meshes and VTK solutions: C++ (OpenMP + MPI) kernels, Python interface"
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.22", "scipy>=1.8"]
+
+[project.optional-dependencies]
+plot = ["matplotlib"]
+vtk = ["pyvista"]
+test = ["pytest"]
+
+[project.scripts]
+cfdpost = "cfdpost.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not slow'"
+markers = [
+    "mpi: runs mpirun subprocesses",
+    "slow: large-memory tests (>2 GiB MPI messages); deselected by default",
+]

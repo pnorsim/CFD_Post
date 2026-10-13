@@ -1,0 +1,11 @@
+.git
+build
+**/__pycache__
+**/*.so
+**/*.pyc
+*.egg-info
+.pytest_cache
+tests/_out
+doc/*.pdf
+demo
+*.sif

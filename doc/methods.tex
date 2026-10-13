@@ -1,0 +1,140 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,citecolor=green!40!black,linkcolor=blue!50!black]{hyperref}
+\usepackage{xcolor}
+
+\newcommand{\vect}[1]{\bm{#1}}
+\newcommand{\dd}{\,\mathrm{d}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+
+\title{\textbf{cfdpost}: main formulas and references}
+\date{}
+\begin{document}
+\maketitle
+\vspace{-1.5cm}
+
+\section*{Nodal gradients}
+The cell gradient is computed with Green--Gauss \cite{blazek2015cfd,barth1989upwind}. Quadrilateral
+faces are split into four triangles $t$ around the face centroid:
+\[
+  \nabla f|_c=\frac{1}{V_c}\sum_{t\in\partial c}\bar f_t\,\vect S_t,\qquad
+  V_c=\frac13\sum_{t\in\partial c}\bar{\vect x}_t\cdot\vect S_t .
+\]
+This is exact for linear fields on tetrahedra, pyramids, prisms and hexahedra. Cell gradients
+are averaged to the nodes with volume weights:
+\[
+  \nabla f_i=\frac{\sum_{c\ni i}|V_c|\,\nabla f|_c}{\sum_{c\ni i}|V_c|}.
+\]
+The dual volume and mesh size are $V_i=\sum_{c\ni i}|V_c|/n_c$ and $h_i=V_i^{1/d}$.
+
+\section*{Iso-surfaces, slices and cuts}
+Each face whose node signs change contributes the directed segment from its ``down'' crossing
+($+\!\to\!-$) to its ``up'' crossing ($-\!\to\!+$); a cell's segments chain into the output
+polygons. This is related to marching cubes and marching tetrahedra
+\cite{lorensen1987marching,doi1991tetrahedra}, but needs no tetrahedral subdivision
+\cite{dompierre1999subdivide}. The crossing point on edge $(a,b)$ is
+\[
+  \vect x=\vect x_a+t(\vect x_b-\vect x_a),\qquad t=\frac{\phi^\ast-\phi_a}{\phi_b-\phi_a},
+\]
+and fields are interpolated with the same $t$. Ambiguous faces are resolved by the sign of the
+face-centre value \cite{nielson1991asymptotic}. A slice is the iso-surface of
+$\phi=(\vect x-\vect x_0)\cdot\hat{\vect n}$.
+
+\section*{Shock detection}
+\textbf{Lovely--Haimes} \cite{lovely1999shock,ma1996shock}. The shock surface is
+$M_n=M_n^\ast$ (default $1$), with
+\[
+  M_n=\frac{\vect V}{a}\cdot\frac{\nabla p}{|\nabla p|},\qquad a=\sqrt{\gamma p/\rho}.
+\]
+Polygons are kept if
+\[
+  |\nabla p|>k\operatorname{median}|\nabla p|\quad\text{and}\quad \mu_t/\mu<r_{\max}.
+\]
+The presets $(M_n^\ast,k,r_{\max})$ are: default $(1,3,10^3)$, inclusive $(1,1.5,10^3)$ and
+conservative $(1.05,5,10^2)$.
+
+\textbf{Ducros sensor} \cite{ducros1999les}, with $\theta=\nabla\cdot\vect V$:
+\[
+  \Phi=\frac{\theta^2}{\theta^2+|\nabla\times\vect V|^2+\varepsilon}\ \ (\theta<0),\qquad \Phi=0\ \text{otherwise}.
+\]
+
+\textbf{Normalised pressure jump} $\sigma_p=|\nabla p|\,h/p$, in the spirit of the pressure
+switch of \cite{jameson1981jst}.
+
+\textbf{Numerical schlieren} $|\nabla\rho|$ \cite{yates1993images}.
+
+\section*{Derived quantities}
+From \cite{anderson2003compressible}:
+\[
+  p_0=p\Bigl(1+\tfrac{\gamma-1}{2}M^2\Bigr)^{\frac{\gamma}{\gamma-1}},\quad
+  T_0=T\Bigl(1+\tfrac{\gamma-1}{2}M^2\Bigr),\quad
+  s/c_v=\ln\frac{p}{\rho^\gamma}.
+\]
+With $G=\nabla\vect V$, $S=\tfrac12(G+G^T)$ and $\Omega=\tfrac12(G-G^T)$:
+\[
+  Q=\tfrac12\bigl(\|\Omega\|^2-\|S\|^2\bigr)\ \text{\cite{hunt1988eddies}},\qquad
+  \lambda_2=\lambda_{\text{mid}}(S^2+\Omega^2)\ \text{\cite{jeong1995vortex}}.
+\]
+The wind axes follow SU2 \cite{economon2016su2}:
+\[
+  \hat{\vect e}_D=(\cos\alpha\cos\beta,\sin\beta,\sin\alpha\cos\beta),\qquad
+  \hat{\vect e}_L=(-\sin\alpha,0,\cos\alpha).
+\]
+
+\section*{Surface loads}
+Per unit dynamic pressure, with $\hat{\vect n}$ the unit normal pointing into the fluid:
+\[
+  \dd\vect F/q_\infty=(-C_p\hat{\vect n}+\vect C_f)\dd A .
+\]
+$C_p$ and $\vect C_f$ are linear on each triangle, and
+$\int\varphi_i\varphi_j\dd A=\tfrac{A}{12}(1+\delta_{ij})$ \cite{zienkiewicz2013fem}. Hence
+\[
+  \vect F_p=-\tfrac13\Bigl(\sum_i C_{p,i}\Bigr)\vect S,\qquad
+  \vect F_v=\tfrac A3\sum_i\vect C_{f,i},\qquad
+  \vect M=\frac{A}{12}\sum_{i,j}(1+\delta_{ij})(\vect x_i-\vect x_{\rm ref})\times(-C_{p,j}\hat{\vect n}+\vect C_{f,j}).
+\]
+The coefficients are $C_L=\vect F\cdot\hat{\vect e}_L/S_{\rm ref}$ and
+$C_M=\vect M/(S_{\rm ref}L_{\rm ref})$. Face normals use Newell's formula
+$\vect N=\sum_k\vect x_k\times\vect x_{k+1}$ \cite{sutherland1974hidden}. A closed body
+satisfies $\oint x\,\hat{\vect n}\dd A=V\hat{\vect e}_x$ \cite{mirtich1996mass}.
+
+\section*{Span loading}
+Triangles are clipped exactly at the strip planes \cite{sutherland1974clipping}. In each strip,
+\[
+  \ell_k=c\,c_l=\frac{\vect F_k\cdot\hat{\vect e}_L}{\Delta\eta_k},\qquad c_{l,k}=\frac{\ell_k}{c_k}.
+\]
+The elliptic reference carries the same load \cite{anderson2017fundamentals}:
+\[
+  \ell_{\rm ell}=\ell_0\sqrt{1-(\eta/s)^2},\qquad
+  \ell_0=\frac{\sum_k\ell_k\Delta\eta_k}{\sum_k\sqrt{1-(\eta_k/s)^2}\,\Delta\eta_k}.
+\]
+A strip is open (the markers do not close the section) when
+\[
+  \frac{|A^+-A^-|}{\max(A^\pm)}>\tau,\qquad A^\pm=\tfrac12\Bigl(\sum|S_z|\pm\sum S_z\Bigr).
+\]
+The free-stream angles are taken from the mean far-field velocity:
+$\alpha=\operatorname{atan2}(U_z,U_x)$ and $\beta=\arcsin(U_y/|\vect U|)$.
+
+\section*{Sections}
+On a cut loop, the trailing edge is the point furthest along the chord direction, and the
+leading edge is the point furthest from the trailing edge. With
+$\Delta\vect x=\vect x_{TE}-\vect x_{LE}$,
+\[
+  c=|\Delta\vect x|,\qquad \theta=\operatorname{atan2}(-\Delta x_z,\Delta x_x).
+\]
+
+\section*{Same-topology meshes}
+Nodes are matched by global index:
+\[
+  \vect d_i=\vect x_i^{\rm def}-\vect x_i^{\rm base},\qquad
+  d_{n,i}=\vect d_i\cdot\hat{\vect n}_i,\qquad
+  \Delta q_i=q_i^{\rm opt}-q_i^{\rm base},
+\]
+where $\hat{\vect n}_i$ is the normalised sum of the area vectors of the faces around node $i$.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+\end{document}
